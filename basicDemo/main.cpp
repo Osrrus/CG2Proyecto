@@ -194,7 +194,9 @@ void initGL()
  * */
 void buildGeometry()
 {
-   objects.push_back(loadObj("assets/box.obj"));
+   objects.push_back(loadObj("assets/Box.obj"));
+   objects.push_back(loadObj("assets/BigBox.obj"));
+   objects.push_back(loadObj("assets/MidBox.obj"));
 }
 
 /**
@@ -281,6 +283,7 @@ void render()
     for (int i = 0; i < objects.size(); i++)
     {
         shader->setMat4("Model",objects[i]->model);
+        shader->setVec3("color",objects[i]->color);   
         objects[i]->Draw();
     }
     

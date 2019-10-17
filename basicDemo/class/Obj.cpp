@@ -33,8 +33,9 @@ void Obj::setObj(std::vector<glm::vec3> Vertex, std::vector<glm::vec2> Uvs, std:
 		this->normals.push_back(Normals[indexN[i]]);
 	}
 
-    std::cout <<this->vertex.size()<<std::endl;
-    std::cout <<indexV.size()<<std::endl;
+	this->color.x = rand();
+	this->color.y = rand();
+	this->color.z = rand();
 
     glBindVertexArray(this->VAO);
 

@@ -13,6 +13,7 @@ class Obj
         glm::mat4 model;
         std::vector<glm::vec3>vertex,normals;
         std::vector<glm::vec2>uvs;
+		glm::vec3 color;
         unsigned int VAO;
         unsigned int VBO[3];
         void setObj(std::vector<glm::vec3>, std::vector<glm::vec2>, std::vector<glm::vec3>,std::vector<unsigned int>,std::vector<unsigned int>,std::vector<unsigned int>);
