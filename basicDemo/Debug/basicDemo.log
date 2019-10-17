@@ -1,0 +1,7 @@
+﻿  glad.c
+  main.cpp
+  Shader.cpp
+  stb_image.cpp
+  Generando código...
+LINK : warning LNK4098: la biblioteca predeterminada'MSVCRT' entra en conflicto con otras bibliotecas; use la biblioteca /NODEFAULTLIB:biblioteca
+  basicDemo.vcxproj -> C:\Users\Alejandro\Desktop\Proyectos\Uni\Graficas 2\Proyecto\Debug\basicDemo.exe

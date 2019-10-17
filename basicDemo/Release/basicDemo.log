@@ -1,0 +1,8 @@
+﻿  main.cpp
+C:\Users\Alejandro\Desktop\Proyectos\Uni\Graficas 2\Proyecto\basicDemo\main.cpp(281,23): warning C4018:  '<': no coinciden signed/unsigned
+  Generando código
+  37 of 525 functions ( 7.0%) were compiled, the rest were copied from previous compilation.
+    27 functions were new in current compilation
+    30 functions had inline decision re-evaluated but remain unchanged
+  Generación de código finalizada
+  basicDemo.vcxproj -> C:\Users\Alejandro\Desktop\Proyectos\Uni\Graficas 2\Proyecto\Release\basicDemo.exe
