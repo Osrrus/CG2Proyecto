@@ -13,6 +13,8 @@
  */
 #define RADIOSITY_TEXTURE_SIZE 1024
 
+using namespace std;
+
 // Window current width
 unsigned int windowWidth = 800;
 // Window current height
@@ -40,75 +42,106 @@ DrawParameters drawParameters;
 //Framebuffer
 unsigned int FBO;
 unsigned int attachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-unsigned int textureTexel;
+unsigned int texture_m[4];
+unsigned int depthTexture;
 unsigned int renderBuffer;
 int lampCounter = 0;
+//Create readback buffers for all of the texture data
+std::vector<GLfloat> worldspacePositionDataBuffer(RADIOSITY_TEXTURE_SIZE* RADIOSITY_TEXTURE_SIZE * 3);
+std::vector<GLfloat> normalVectorDataBuffer(RADIOSITY_TEXTURE_SIZE* RADIOSITY_TEXTURE_SIZE * 3);
 
+std::vector<GLfloat> idDataBuffer(RADIOSITY_TEXTURE_SIZE* RADIOSITY_TEXTURE_SIZE * 3);
+std::vector<GLfloat> uvDataBuffer(RADIOSITY_TEXTURE_SIZE* RADIOSITY_TEXTURE_SIZE * 3);
+vector<glm::vec3> lightLocations;
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void onMouseButton(GLFWwindow* window, int button, int action, int mods);
 
 glm::mat4 projection,model;
 
-void initFramebuffer() 
-{
+void render();
 
+unsigned int gPosition, gNormal, gAlbedoSpec;
+
+bool initFramebuffer() 
+{
 	// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
 	glGenFramebuffers(1, &FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
 	// The texture we're going to render to
-	glGenTextures(1, &textureTexel);
-
-	// "Bind" the newly created texture : all future texture functions will modify this texture
-	glBindTexture(GL_TEXTURE_2D, textureTexel);
-
-	// Give an empty image to OpenGL ( the last "0" means "empty" )
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-
-	// Poor filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	// The depth buffer
-	glGenRenderbuffers(1, &renderBuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderBuffer);
+	glGenTextures(4, texture_m);
+	glGenTextures(1, &depthTexture);
+	// position color buffer
+	glGenTextures(1, &gPosition);
+	glBindTexture(GL_TEXTURE_2D, gPosition);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+	// normal color buffer
+	glGenTextures(1, &gNormal);
+	glBindTexture(GL_TEXTURE_2D, gNormal);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, windowWidth, windowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+	// color + specular color buffer
+	glGenTextures(1, &gAlbedoSpec);
+	glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
 
 	
-	// Set "textureTexel" as our colour attachement #0
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTexel, 0);
-
-	//// Depth texture alternative : 
-	//glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
+	//depth texture
+	glBindTexture(GL_TEXTURE_2D, depthTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, windowWidth, windowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
+		NULL);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
 
 
 	// Set the list of draw buffers.
 	glDrawBuffers(4, attachments); // "1" is the size of DrawBuffers
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+	if (Status != GL_FRAMEBUFFER_COMPLETE) {
+		printf("FB error, status: 0x%x\n", Status);
+		return false;
+	}
+
+	// restore default FBO
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+	return true;
 }
 
 void renderFramebuffer() 
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	glViewport(0, 0, windowWidth, windowHeight);
 
-	//Pasar uniforms
 	//Render
-	for (unsigned int i = 0; i < objects.size(); ++i) {
+	// Use the shader
+	shader->use();
+	projection = glm::perspective(glm::radians(60.0f), (float)windowWidth / (float)windowHeight, 0.001f, 100.0f);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	shader->setMat4("View", camera->getWorlToViewMatrix());
+	shader->setMat4("Projection", projection);
 
-    
-    }
+	// Binds the vertex array to be drawn
+	for (int i = 0; i < objects.size(); i++)
+	{
+		shader->setMat4("Model", objects[i]->model);
+		shader->setVec3("color", objects[i]->color);
+		objects[i]->Draw();
+	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	// reset viewport
 	glViewport(0, 0, windowWidth, windowHeight);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 }
 
 
@@ -220,6 +253,9 @@ bool init()
     buildGeometry();
     // Loads the texture into the GPU
 
+	//init frambe buffer
+	initFramebuffer();
+
     return true;
 }
 /**
@@ -270,6 +306,8 @@ void render()
 {
     // Clears the color and depth buffers from the frame buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	renderFramebuffer();
 
     /** Draws code goes here **/
     // Use the shader
@@ -335,6 +373,11 @@ int main(int argc, char const *argv[])
     glDeleteVertexArrays(1, &VAO);
     // Deletes the vertex object from the GPU
     glDeleteBuffers(1, &VBO);
+	glDeleteFramebuffers(1,&FBO);
+	glDeleteTextures(1, &depthTexture);
+	glDeleteTextures(1, &renderBuffer);
+	glDeleteTextures(4, texture_m);
+
     // Destroy the shader
     delete shader;
 
