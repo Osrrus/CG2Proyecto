@@ -350,9 +350,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 		camera->mouseUpdate(glm::vec2(xpos, ypos));
 	}
 
-
-
-    // Framebuffer    glDeleteFramebuffers(1, &FBO);
 	glDeleteRenderbuffers(1, &renderBuffer);	TwMouseMotion(static_cast<int>(xpos), static_cast<int>(ypos));
 }
 
@@ -360,9 +357,6 @@ void onMouseButton(GLFWwindow* window, int button, int action, int mods)
 {
 	auto a = action == GLFW_PRESS ? TW_MOUSE_PRESSED : TW_MOUSE_RELEASED;
 	auto b = TW_MOUSE_LEFT;
-
-	//pressMenu = TwMouseButton(a, b);
-	//std::cout << "hola" << std::endl;
 
 	if (a) {
 
