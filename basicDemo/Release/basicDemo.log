@@ -1,1 +1,9 @@
-﻿  basicDemo.vcxproj -> C:\Users\58424\Downloads\proyecto\CG2Proyecto\Release\basicDemo.exe
+﻿  main.cpp
+C:\Users\58424\Downloads\proyecto\CG2Proyecto\basicDemo\main.cpp(124,20): warning C4018:  '<': no coinciden signed/unsigned
+C:\Users\58424\Downloads\proyecto\CG2Proyecto\basicDemo\main.cpp(312,23): warning C4018:  '<': no coinciden signed/unsigned
+  Generando código
+  46 of 565 functions ( 8.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    25 functions had inline decision re-evaluated but remain unchanged
+  Generación de código finalizada
+  basicDemo.vcxproj -> C:\Users\58424\Downloads\proyecto\CG2Proyecto\Release\basicDemo.exe
